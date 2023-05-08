@@ -1,0 +1,25 @@
+{
+  "name": "pacman",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "tsc",
+    "dev": "tsc --watch",
+    "git-add": "sh -c 'git add .'",
+    "commit": "npm run git-add && cz"
+  },
+  "keywords": [],
+  "author": "ezequiel",
+  "license": "MIT",
+  "devDependencies": {
+    "cz-conventional-changelog": "^3.3.0",
+    "typescript": "5.0.4"
+  },
+  "config": {
+    "commitizen": {
+      "path": "./node_modules/cz-conventional-changelog"
+    }
+  }
+}
