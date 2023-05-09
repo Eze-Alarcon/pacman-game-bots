@@ -78,6 +78,10 @@ interface InterfacePlayer extends InterfacePosition {
   radius?: number
 }
 
+interface InterfaceBoundary extends InterfacePosition {
+  image: HTMLImageElement
+}
+
 interface InterfaceCircle extends InterfacePlayer {
   velocity: InterfacePositionsXY
   radius: number
@@ -108,14 +112,46 @@ canvas.height = window.innerHeight
 // Nota C-3
 
 const map = [
-  ['-', '-', '-', '-', '-', '-', '-'],
-  ['-', ' ', ' ', ' ', ' ', ' ', '-'],
-  ['-', ' ', '-', ' ', '-', ' ', '-'],
-  ['-', ' ', ' ', ' ', ' ', ' ', '-'],
-  ['-', '-', '-', '-', '-', '-', '-']
+  ['1', '-', '-', '-', '-', '-', '-', '-', '-', '-', '2'],
+  ['|', '.', '.', '.', '.', '.', '.', '.', '.', '.', '|'],
+  ['|', '.', 'b', '.', '[', '7', ']', '.', 'b', '.', '|'],
+  ['|', '.', '.', '.', '.', '_', '.', '.', '.', '.', '|'],
+  ['|', '.', '[', ']', '.', '.', '.', '[', ']', '.', '|'],
+  ['|', '.', '.', '.', '.', '^', '.', '.', '.', '.', '|'],
+  ['|', '.', 'b', '.', '[', '+', ']', '.', 'b', '.', '|'],
+  ['|', '.', '.', '.', '.', '_', '.', '.', '.', '.', '|'],
+  ['|', '.', '[', ']', '.', '.', '.', '[', ']', '.', '|'],
+  ['|', '.', '.', '.', '.', '^', '.', '.', '.', '.', '|'],
+  ['|', '.', 'b', '.', '[', '5', ']', '.', 'b', '.', '|'],
+  ['|', '.', '.', '.', '.', '.', '.', '.', '.', 'p', '|'],
+  ['4', '-', '-', '-', '-', '-', '-', '-', '-', '-', '3']
 ]
 
 const boundaries: Boundary[] = []
+
+const keys = {
+  up: {
+    pressed: false
+  },
+  left: {
+    pressed: false
+  },
+  down: {
+    pressed: false
+  },
+  right: {
+    pressed: false
+  }
+}
+
+let lastKey = ''
+
+const GAME_KEYS = {
+  UP: 'w',
+  DOWN: 's',
+  RIGHT: 'd',
+  LEFT: 'a'
+}
 
 /* ============= Classes ============= */
 
@@ -123,18 +159,21 @@ class Boundary {
   public position: InterfacePositionsXY
   public width: number
   public height: number
+  public image: HTMLImageElement
   static width: number = 40
   static height: number = 40
-  constructor ({ position }: InterfacePosition) {
+  constructor ({ position, image }: InterfaceBoundary) {
     this.position = position
     this.width = 40
     this.height = 40
+    this.image = image
   }
 
   draw (): void {
     // B-2
-    c.fillStyle = 'blue'
-    c.fillRect(this.position.x, this.position.y, this.width, this.height)
+    // c.fillStyle = 'blue'
+    // c.fillRect(this.position.x, this.position.y, this.width, this.height)
+    c.drawImage(this.image, this.position.x, this.position.y)
   }
 }
 
@@ -181,22 +220,11 @@ const player = new Player({
   }
 })
 
-const keys = {
-  w: {
-    pressed: false
-  },
-  a: {
-    pressed: false
-  },
-  s: {
-    pressed: false
-  },
-  d: {
-    pressed: false
-  }
+function createImage (src: string): HTMLImageElement {
+  const image = new Image()
+  image.src = `./images/${src}`
+  return image
 }
-
-let lastKey = ''
 
 map.forEach((row, rowIndex) => {
   row.forEach((symbol, columnIndex) => {
@@ -206,12 +234,180 @@ map.forEach((row, rowIndex) => {
           position: {
             x: Boundary.width * columnIndex,
             y: Boundary.height * rowIndex
-          }
+          },
+          image: createImage('pipeHorizontal.png')
         }))
+        break
+      case '|':
+        boundaries.push(new Boundary({
+          position: {
+            x: Boundary.width * columnIndex,
+            y: Boundary.height * rowIndex
+          },
+          image: createImage('pipeVertical.png')
+        }))
+        break
+      case '1':
+        boundaries.push(new Boundary({
+          position: {
+            x: Boundary.width * columnIndex,
+            y: Boundary.height * rowIndex
+          },
+          image: createImage('pipeCorner1.png')
+        }))
+        break
+      case '2':
+        boundaries.push(new Boundary({
+          position: {
+            x: Boundary.width * columnIndex,
+            y: Boundary.height * rowIndex
+          },
+          image: createImage('pipeCorner2.png')
+        }))
+        break
+      case '3':
+        boundaries.push(new Boundary({
+          position: {
+            x: Boundary.width * columnIndex,
+            y: Boundary.height * rowIndex
+          },
+          image: createImage('pipeCorner3.png')
+        }))
+        break
+      case '4':
+        boundaries.push(new Boundary({
+          position: {
+            x: Boundary.width * columnIndex,
+            y: Boundary.height * rowIndex
+          },
+          image: createImage('pipeCorner4.png')
+        }))
+        break
+      case 'b':
+        boundaries.push(new Boundary({
+          position: {
+            x: Boundary.width * columnIndex,
+            y: Boundary.height * rowIndex
+          },
+          image: createImage('block.png')
+        }))
+        break
+      case '[':
+        boundaries.push(
+          new Boundary({
+            position: {
+              x: Boundary.width * columnIndex,
+              y: Boundary.height * rowIndex
+            },
+            image: createImage('capLeft.png')
+          })
+        )
+        break
+      case ']':
+        boundaries.push(
+          new Boundary({
+            position: {
+              x: Boundary.width * columnIndex,
+              y: Boundary.height * rowIndex
+            },
+            image: createImage('capRight.png')
+          })
+        )
+        break
+      case '_':
+        boundaries.push(
+          new Boundary({
+            position: {
+              x: Boundary.width * columnIndex,
+              y: Boundary.height * rowIndex
+            },
+            image: createImage('capBottom.png')
+          })
+        )
+        break
+      case '^':
+        boundaries.push(
+          new Boundary({
+            position: {
+              x: Boundary.width * columnIndex,
+              y: Boundary.height * rowIndex
+            },
+            image: createImage('capTop.png')
+          })
+        )
+        break
+      case '+':
+        boundaries.push(
+          new Boundary({
+            position: {
+              x: Boundary.width * columnIndex,
+              y: Boundary.height * rowIndex
+            },
+            image: createImage('pipeCross.png')
+          })
+        )
+        break
+      case '5':
+        boundaries.push(
+          new Boundary({
+            position: {
+              x: Boundary.width * columnIndex,
+              y: Boundary.height * rowIndex
+            },
+            // color: 'blue',
+            image: createImage('pipeConnectorTop.png')
+          })
+        )
+        break
+      case '6':
+        boundaries.push(
+          new Boundary({
+            position: {
+              x: Boundary.width * columnIndex,
+              y: Boundary.height * rowIndex
+            },
+            // color: 'blue',
+            image: createImage('pipeConnectorRight.png')
+          })
+        )
+        break
+      case '7':
+        boundaries.push(
+          new Boundary({
+            position: {
+              x: Boundary.width * columnIndex,
+              y: Boundary.height * rowIndex
+            },
+            // color: 'blue',
+            image: createImage('pipeConnectorBottom.png')
+          })
+        )
+        break
+      case '8':
+        boundaries.push(
+          new Boundary({
+            position: {
+              x: Boundary.width * columnIndex,
+              y: Boundary.height * rowIndex
+            },
+            image: createImage('pipeConnectorLeft.png')
+          })
+        )
         break
     }
   })
 })
+
+// case '.':
+//   pellets.push(
+//     new Pellet({
+//       position: {
+//         x: j * Boundary.width + Boundary.width / 2,
+//         y: i * Boundary.height + Boundary.height / 2
+//       }
+//     })
+//   )
+//   break
 
 function circleColideWithReactangle ({
   circle,
@@ -245,7 +441,7 @@ function animate (): void {
   // Nota G-7
   c.clearRect(0, 0, canvas.width, canvas.height)
 
-  if (keys.w.pressed && lastKey === 'w') {
+  if (keys.up.pressed && lastKey === GAME_KEYS.UP) {
     // Por cada borde (boundary) compararemos si ese borde esta tocando a nuestro player
     for (let i = 0; i < boundaries.length; i++) {
       const boundary = boundaries[i]
@@ -268,7 +464,7 @@ function animate (): void {
         player.velocity.y = -5
       }
     }
-  } else if (keys.s.pressed && lastKey === 's') {
+  } else if (keys.down.pressed && lastKey === GAME_KEYS.DOWN) {
     for (let i = 0; i < boundaries.length; i++) {
       const boundary = boundaries[i]
 
@@ -290,7 +486,7 @@ function animate (): void {
         player.velocity.y = 5
       }
     }
-  } else if (keys.a.pressed && lastKey === 'a') {
+  } else if (keys.left.pressed && lastKey === GAME_KEYS.LEFT) {
     for (let i = 0; i < boundaries.length; i++) {
       const boundary = boundaries[i]
 
@@ -312,7 +508,7 @@ function animate (): void {
         player.velocity.x = -5
       }
     }
-  } else if (keys.d.pressed && lastKey === 'd') {
+  } else if (keys.right.pressed && lastKey === GAME_KEYS.RIGHT) {
     for (let i = 0; i < boundaries.length; i++) {
       const boundary = boundaries[i]
 
@@ -350,8 +546,6 @@ function animate (): void {
   })
 
   player.update()
-  // player.velocity.y = 0
-  // player.velocity.x = 0
 }
 
 animate()
@@ -364,21 +558,21 @@ window.addEventListener('keydown', (event) => {
   const { key } = event
 
   switch (key) {
-    case 'w':
-      keys.w.pressed = true
-      lastKey = 'w'
+    case GAME_KEYS.UP:
+      keys.up.pressed = true
+      lastKey = GAME_KEYS.UP
       break
-    case 's':
-      keys.s.pressed = true
-      lastKey = 's'
+    case GAME_KEYS.DOWN:
+      keys.down.pressed = true
+      lastKey = GAME_KEYS.DOWN
       break
-    case 'a':
-      keys.a.pressed = true
-      lastKey = 'a'
+    case GAME_KEYS.RIGHT:
+      keys.right.pressed = true
+      lastKey = GAME_KEYS.RIGHT
       break
-    case 'd':
-      keys.d.pressed = true
-      lastKey = 'd'
+    case GAME_KEYS.LEFT:
+      keys.left.pressed = true
+      lastKey = GAME_KEYS.LEFT
       break
   }
 })
@@ -389,17 +583,17 @@ window.addEventListener('keyup', (event) => {
   const { key } = event
 
   switch (key) {
-    case 'w':
-      keys.w.pressed = false
+    case GAME_KEYS.UP:
+      keys.up.pressed = false
       break
-    case 's':
-      keys.s.pressed = false
+    case GAME_KEYS.DOWN:
+      keys.down.pressed = false
       break
-    case 'a':
-      keys.a.pressed = false
+    case GAME_KEYS.RIGHT:
+      keys.right.pressed = false
       break
-    case 'd':
-      keys.d.pressed = false
+    case GAME_KEYS.LEFT:
+      keys.left.pressed = false
       break
   }
 })
