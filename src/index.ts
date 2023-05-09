@@ -78,6 +78,10 @@ interface InterfacePlayer extends InterfacePosition {
   radius?: number
 }
 
+interface InterfacePellet extends InterfacePosition {
+  radius?: number
+}
+
 interface InterfaceBoundary extends InterfacePosition {
   image: HTMLImageElement
 }
@@ -85,7 +89,6 @@ interface InterfaceBoundary extends InterfacePosition {
 interface InterfaceCircle extends InterfacePlayer {
   velocity: InterfacePositionsXY
   radius: number
-  // borders: InterfaceBorders
 }
 
 interface InterfaceRectangle {
@@ -128,6 +131,7 @@ const map = [
 ]
 
 const boundaries: Boundary[] = []
+const pellets: Pellet[] = []
 
 const keys = {
   up: {
@@ -181,7 +185,6 @@ class Player {
   public position: InterfacePositionsXY
   public velocity: InterfacePositionsXY
   public radius: number
-  // public borders: InterfaceBorders
   static radius: number = 10
 
   constructor ({ position, velocity, radius = 15 }: InterfacePlayer) {
@@ -204,6 +207,25 @@ class Player {
     this.draw()
     this.position.x += this.velocity.x
     this.position.y += this.velocity.y
+  }
+}
+
+class Pellet {
+  public position: InterfacePositionsXY
+  public radius: number
+  static radius: number = 10
+
+  constructor ({ position, radius = 3 }: InterfacePellet) {
+    this.position = position
+    this.radius = radius
+  }
+
+  draw (): void {
+    c.beginPath()
+    c.arc(this.position.x, this.position.y, this.radius, 0, Math.PI * 2)
+    c.fillStyle = 'white'
+    c.fill()
+    c.closePath()
   }
 }
 
@@ -394,20 +416,19 @@ map.forEach((row, rowIndex) => {
           })
         )
         break
+      case '.':
+        pellets.push(
+          new Pellet({
+            position: {
+              x: Boundary.width * columnIndex + Boundary.width / 2,
+              y: Boundary.height * rowIndex + Boundary.height / 2
+            }
+          })
+        )
+        break
     }
   })
 })
-
-// case '.':
-//   pellets.push(
-//     new Pellet({
-//       position: {
-//         x: j * Boundary.width + Boundary.width / 2,
-//         y: i * Boundary.height + Boundary.height / 2
-//       }
-//     })
-//   )
-//   break
 
 function circleColideWithReactangle ({
   circle,
@@ -531,6 +552,10 @@ function animate (): void {
       }
     }
   }
+
+  pellets.forEach(pellet => {
+    pellet.draw()
+  })
 
   boundaries.forEach((boundary) => {
     boundary.draw()
