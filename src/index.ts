@@ -106,6 +106,8 @@ interface InterfaceColitionElements {
 
 const canvas = window.document.getElementById('canvas') as HTMLCanvasElement
 
+const scoreEl = window.document.getElementById('score') as HTMLSpanElement
+
 // canvas context
 const c = canvas.getContext('2d') as CanvasRenderingContext2D
 
@@ -149,6 +151,8 @@ const keys = {
 }
 
 let lastKey = ''
+
+let score = 0
 
 const GAME_KEYS = {
   UP: 'w',
@@ -553,6 +557,7 @@ function animate (): void {
     }
   }
 
+  // touch pellets
   for (let i = pellets.length - 1; i > 0; i--) {
     const pellet = pellets[i]
 
@@ -565,6 +570,8 @@ function animate (): void {
       pellet.position.y - player.position.y
     ) < pellet.radius + player.radius)) {
       pellets.splice(i, 1)
+      score += 10
+      scoreEl.innerText = `${score}`
     }
   }
 
