@@ -188,27 +188,50 @@ class Player {
   public position: InterfacePositionsXY
   public velocity: InterfacePositionsXY
   public radius: number
+  public radiands: number
+  public openRate: number
+  public rotation: number
 
   constructor ({ position, velocity, radius = 15 }: InterfacePlayer) {
     this.position = position
     this.velocity = velocity
     this.radius = radius
+    this.radiands = 0.75
+    this.openRate = 0.08
+    this.rotation = 0
   }
 
   draw (): void {
+    c.save()
+    c.translate(this.position.x, this.position.y)
+    c.rotate(this.rotation)
+    c.translate(-this.position.x, -this.position.y)
     // Nota D-4
     c.beginPath()
     // Nota E-4
-    c.arc(this.position.x, this.position.y, this.radius, 0, Math.PI * 2)
+    c.arc(
+      this.position.x,
+      this.position.y,
+      this.radius,
+      this.radiands,
+      Math.PI * 2 - this.radiands
+    )
+    c.lineTo(this.position.x, this.position.y)
     c.fillStyle = 'yellow'
     c.fill()
     c.closePath()
+    c.restore()
   }
 
   update (): void {
     this.draw()
     this.position.x += this.velocity.x
     this.position.y += this.velocity.y
+
+    if (this.radiands < 0 || this.radiands > 0.75) {
+      this.openRate = -this.openRate
+    }
+    this.radiands += this.openRate
   }
 }
 
@@ -827,6 +850,11 @@ function animate (): void {
       ghost.prevCollision = []
     }
   })
+
+  if (player.velocity.x > 0) player.rotation = 0
+  else if (player.velocity.x < 0) player.rotation = Math.PI
+  else if (player.velocity.y > 0) player.rotation = Math.PI / 2 // ok
+  else if (player.velocity.y < 0) player.rotation = Math.PI * 1.5
 }
 
 animate()
@@ -878,34 +906,3 @@ window.addEventListener('keyup', (event) => {
       break
   }
 })
-
-// if (ghost.velocity.x > 0) ghost.prevCollision.push('right')
-// else if (ghost.velocity.x < 0) ghost.prevCollision.push('left')
-// else if (ghost.velocity.y < 0) ghost.prevCollision.push('up')
-// else if (ghost.velocity.y > 0) ghost.prevCollision.push('down')
-
-// comparamos las colisiones vs las coliciones anteriores
-
-// escogemos una direccion disponible al azar
-// const direction = pathways[Math.floor(Math.random() * pathways.length)]
-
-// switch (direction) {
-//   case 'down':
-//     ghost.velocity.y = 5
-//     ghost.velocity.x = 0
-//     break
-//   case 'up':
-//     ghost.velocity.y = -5
-//     ghost.velocity.x = 0
-//     break
-//   case 'right':
-//     ghost.velocity.y = 0
-//     ghost.velocity.x = 5
-//     break
-//   case 'left':
-//     ghost.velocity.y = 0
-//     ghost.velocity.x = -5
-//     break
-// }
-
-// ghost.prevCollision = []
