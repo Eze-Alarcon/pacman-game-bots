@@ -1,58 +1,110 @@
-/* ============= Notas ============= */
+/* ============= Notes ============= */
 
 /*
-  para ir  hacia arriba, debemos recordar como es el sistema de coordenadas en el canvas
+  Keep in mind how is the coordinate system on the web
   0,0 -> + x
   ↓
   + y
 */
 
 /*
-  Nota A-1
-  player.borders.top + player.velocity.y
-    Esto lo hacemos para que, antes de chocar, se frene el jugador
-    EL jugador quedara a una corta distancia de la pared pero no la tocara
-    Si esto no estuviera, el jugador chocaria con la pared y no permitiria continuar el juego
-    ya que, al agregar esto, si el jugador, supongamos que choca con la pared superior,
-    intenta moverse hacia abajo podra, ya que la velocidad ira disminuyendo permitiendo que
-    el jugador se eleje, si esto no estuviera, el jugador choca contra la pared y ahi se quedara por siempre
+  Note A-1
 
-  Lo mismo aplica para el eje x
+  The padding is to avoid that, if the ghost moves slowly,
+    the collision system does not give us an error direction when thinking that
+    has room to move in one direction
+
+    the padding would be the remaining space between the object being moved and the boundary
+
+  Note A-2
+
+  circle.position.y - circle.radius + circle.velocity.y
+
+  where:
+  circle.position.y - circle.radius = upper edge of the circle
+
+  and:
+  circle.velocity.y = object velocity in the y-axis
+
+  This is so that, before colliding, the player will stop.
+
+    The player will be a short distance from the wall but will not touch it.
+    If this did not exist, the player would collide with the wall and would not be allowed to continue the game because the condition would continue to be true.
+
+    suppose the player collides with the upper wall,
+
+      - By adding the speed, we allow the player tomove downwards he will be able to, as the speed will be decreasing allowing the player to move upwards,
+
+      - If we do not add velocity to the equation, the player hits the wall and stays there forever.
+
+  The same applies to the x-axis
+
+  Note A-3
+
+  compares if both objects (circle and square) are touching and returns true or false
 */
 
-// Nota B-2
-// le damos color porque sino los pinta de negro y con un fondo negro no vamos a ver nada
-
 /*
-  Nota C-2
-  Descripciones de cada item:
-    '-' -> equivale a una caja (box)
-    ' ' -> equivale a un espacio vacio`
+  Note C-1
+  Item descriptions:
+    '-' -> x-axis boundary
+    ' ' -> free space
+    | -> y-axis boundary
+    . -> game point (pellet)
+    numbers ( 1,2,3,4) -> corners
+    b -> box
+    p -> power up
+    [ and ] -> used to create larger boxes
+    5 and 7 -> used to create T-box shapes
+    + -> used to create cross box shapes
 */
 
-// Nota D-4
-// de esta forma indicamos que vamos a comenzar a dibujar algo (como en los svg)
-
 /*
-  Nota E-4
-  en este caso vamos a dibujar un arc, el arc toma varios parametros
-  this.position.x -> ancho
-  this.position.y -> alto
-  this.radius -> radio
-  0 -> inicio del arco medido en radianes, no en grados
-  Math.PI * 2 -> fin del arco (2 pi en radianes es un circulo completo)
+  Note D-1
+  in this way we indicate we start drawing something (works like in svg)
+
+  Note D-2
+  c.arc(
+    this.position.x,
+    this.position.y,
+    this.radius,
+    this.radiands,
+    Math.PI * 2 - this.radiands
+  )
+
+  in this case we are going to draw an arc, the arc takes various parameters
+  this.position.x -> width
+  this.position.y -> height
+  this.radius -> radius
+  0 -> start of the arc measured in radians, not degrees
+  Math.PI * 2 -> end of the arc (2 pi in radians is a full circle)
+
+  Note D-3 and Note D-4
+  c.lineTo(this.position.x, this.position.y)
+
+  if (this.radiands < 0 || this.radiands > 0.75) {
+      this.openRate = -this.openRate
+    }
+    this.radiands += this.openRate
+
+  This is for drawing the mouth
 */
 
-// Nota F-6
-// method tells the browser that you wish to perform an animation and requests that the browser calls a specified function to update an animation right before the next repaint.
+/*
+  Note F-6
+
+  method tells the browser that you wish to perform an animation and requests that the browser calls a specified function to update an animation right before the next repaint.
+
+  Returns an ID which is the ID of the frame, we use this value to pause the canvas updates.
+*/
 
 /*
-  Nota G-7
-  debemos limpiar el camvas en cada iteracion
-  0 -> inicio en x
-  0 -> inicio en y
-  canvas.width -> fin en x
-  canvas.height -> fin en y
+  Note G-7
+  clean the canvas before each iteration
+  0 -> start on x-axis
+  0 -> start on y-axis
+  canvas.width -> end on x-axis
+  canvas.height -> end on y-axis
 */
 
 /* ============= Interfaces ============= */
@@ -62,10 +114,6 @@ interface InterfacePositionsXY {
   y: number
 }
 
-interface InterfacePosition {
-  position: InterfacePositionsXY
-}
-
 interface InterfaceBorders {
   top: number
   bottom: number
@@ -73,17 +121,20 @@ interface InterfaceBorders {
   right: number
 }
 
-interface InterfacePlayer extends InterfacePosition {
+interface InterfacePlayer {
+  position: InterfacePositionsXY
   velocity: InterfacePositionsXY
   radius?: number
   color?: string
 }
 
-interface InterfacePellet extends InterfacePosition {
+interface InterfacePellet {
+  position: InterfacePositionsXY
   radius?: number
 }
 
-interface InterfaceBoundary extends InterfacePosition {
+interface InterfaceBoundary {
+  position: InterfacePositionsXY
   image: HTMLImageElement
 }
 
@@ -115,7 +166,7 @@ const c = canvas.getContext('2d') as CanvasRenderingContext2D
 canvas.width = window.innerWidth
 canvas.height = window.innerHeight
 
-// Nota C-3
+// Note C-1
 
 const map = [
   ['1', '-', '-', '-', '-', '-', '-', '-', '-', '-', '2'],
@@ -191,6 +242,7 @@ class Player {
   public radiands: number
   public openRate: number
   public rotation: number
+  static speed: number = 5
 
   constructor ({ position, velocity, radius = 15 }: InterfacePlayer) {
     this.position = position
@@ -206,9 +258,9 @@ class Player {
     c.translate(this.position.x, this.position.y)
     c.rotate(this.rotation)
     c.translate(-this.position.x, -this.position.y)
-    // Nota D-4
+    // Note D-1
     c.beginPath()
-    // Nota E-4
+    // Note D-2
     c.arc(
       this.position.x,
       this.position.y,
@@ -216,6 +268,7 @@ class Player {
       this.radiands,
       Math.PI * 2 - this.radiands
     )
+    // Note D-3
     c.lineTo(this.position.x, this.position.y)
     c.fillStyle = 'yellow'
     c.fill()
@@ -228,6 +281,7 @@ class Player {
     this.position.x += this.velocity.x
     this.position.y += this.velocity.y
 
+    // Note D-4
     if (this.radiands < 0 || this.radiands > 0.75) {
       this.openRate = -this.openRate
     }
@@ -244,7 +298,6 @@ class Ghost {
   public speed: number
   static initialSpeed: number = 2
   static scared: boolean = false
-  // static SCARED: boolean = false
 
   constructor ({ position, velocity, radius = 15, color = 'red' }: InterfacePlayer) {
     this.position = position
@@ -253,7 +306,6 @@ class Ghost {
     this.color = color
     this.prevCollision = []
     this.speed = 2
-    // this.scared = false
   }
 
   draw (): void {
@@ -557,16 +609,13 @@ function circleCollideWithReactangle ({
   circle,
   rectangle
 }: InterfaceColitionElements): boolean {
-  /*
-    El padding es para evitar que, si el fantasma se mueve lento,
-    el sistema de colision no nos de una direccion errorea al pensar que
-    tiene lugar para moverse en una direccion
-
-    el padding seria el espacio restante entre el objeto que se mueve y el limite de un borde
-  */
   const padding = Boundary.width / 2 - circle.radius - 1
 
-  // Los numeros indican cual debe comprarse con cual
+  // Note A-1
+  // The numbers indicate which should be compared with which.
+  // basically it's one end of the circle with the opposite end of the square
+
+  // Note A-2
   const playerBorders = {
     top: circle.position.y - circle.radius + circle.velocity.y, // 1
     right: circle.position.x + circle.radius + circle.velocity.x, // 2
@@ -581,7 +630,8 @@ function circleCollideWithReactangle ({
     right: rectangle.position.x + rectangle.width + padding // 4
   }
 
-  // Nota A-1
+  // Note A-3
+
   return playerBorders.top <= boundaryBorders.bottom &&
   playerBorders.right >= boundaryBorders.left &&
   playerBorders.bottom >= boundaryBorders.top &&
@@ -591,9 +641,9 @@ function circleCollideWithReactangle ({
 let animationID: number
 
 function animate (): void {
-  // Nota F-6
+  // Note F-6
   animationID = window.requestAnimationFrame(animate)
-  // Nota G-7
+  // Note G-7
   c.clearRect(0, 0, canvas.width, canvas.height)
 
   if (keys.up.pressed && lastKey === GAME_KEYS.UP) {
@@ -607,7 +657,7 @@ function animate (): void {
             ...player,
             velocity: {
               x: 0,
-              y: -5
+              y: -Player.speed
             }
           },
           rectangle: boundary
@@ -616,7 +666,7 @@ function animate (): void {
         player.velocity.y = 0
         break
       } else {
-        player.velocity.y = -5
+        player.velocity.y = -Player.speed
       }
     }
   } else if (keys.down.pressed && lastKey === GAME_KEYS.DOWN) {
@@ -629,7 +679,7 @@ function animate (): void {
             ...player,
             velocity: {
               x: 0,
-              y: 5
+              y: Player.speed
             }
           },
           rectangle: boundary
@@ -638,7 +688,7 @@ function animate (): void {
         player.velocity.y = 0
         break
       } else {
-        player.velocity.y = 5
+        player.velocity.y = Player.speed
       }
     }
   } else if (keys.left.pressed && lastKey === GAME_KEYS.LEFT) {
@@ -650,7 +700,7 @@ function animate (): void {
           circle: {
             ...player,
             velocity: {
-              x: -5,
+              x: -Player.speed,
               y: 0
             }
           },
@@ -660,7 +710,7 @@ function animate (): void {
         player.velocity.x = 0
         break
       } else {
-        player.velocity.x = -5
+        player.velocity.x = -Player.speed
       }
     }
   } else if (keys.right.pressed && lastKey === GAME_KEYS.RIGHT) {
@@ -672,7 +722,7 @@ function animate (): void {
           circle: {
             ...player,
             velocity: {
-              x: 5,
+              x: Player.speed,
               y: 0
             }
           },
@@ -682,7 +732,7 @@ function animate (): void {
         player.velocity.x = 0
         break
       } else {
-        player.velocity.x = 5
+        player.velocity.x = Player.speed
       }
     }
   }
