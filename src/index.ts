@@ -135,6 +135,7 @@ const map = [
 
 const boundaries: Boundary[] = []
 const pellets: Pellet[] = []
+const powerUps: PowerUp[] = []
 
 const keys = {
   up: {
@@ -179,9 +180,6 @@ class Boundary {
   }
 
   draw (): void {
-    // B-2
-    // c.fillStyle = 'blue'
-    // c.fillRect(this.position.x, this.position.y, this.width, this.height)
     c.drawImage(this.image, this.position.x, this.position.y)
   }
 }
@@ -222,6 +220,8 @@ class Ghost {
   public prevCollision: string[]
   public speed: number
   static initialSpeed: number = 2
+  static scared: boolean = false
+  // static SCARED: boolean = false
 
   constructor ({ position, velocity, radius = 15, color = 'red' }: InterfacePlayer) {
     this.position = position
@@ -230,12 +230,13 @@ class Ghost {
     this.color = color
     this.prevCollision = []
     this.speed = 2
+    // this.scared = false
   }
 
   draw (): void {
     c.beginPath()
     c.arc(this.position.x, this.position.y, this.radius, 0, Math.PI * 2)
-    c.fillStyle = this.color
+    c.fillStyle = Ghost.scared ? 'blue' : this.color
     c.fill()
     c.closePath()
   }
@@ -250,11 +251,28 @@ class Ghost {
 class Pellet {
   public position: InterfacePositionsXY
   public radius: number
-  static radius: number = 10
 
-  constructor ({ position, radius = 3 }: InterfacePellet) {
+  constructor ({ position }: InterfacePellet) {
     this.position = position
-    this.radius = radius
+    this.radius = 3
+  }
+
+  draw (): void {
+    c.beginPath()
+    c.arc(this.position.x, this.position.y, this.radius, 0, Math.PI * 2)
+    c.fillStyle = 'white'
+    c.fill()
+    c.closePath()
+  }
+}
+
+class PowerUp {
+  public position: InterfacePositionsXY
+  public radius: number
+
+  constructor ({ position }: InterfacePellet) {
+    this.position = position
+    this.radius = 6
   }
 
   draw (): void {
@@ -310,7 +328,7 @@ const ghosts = [
       x: Ghost.initialSpeed,
       y: 0
     },
-    color: 'blue'
+    color: 'green'
   })
 ]
 
@@ -498,6 +516,16 @@ map.forEach((row, rowIndex) => {
           })
         )
         break
+      case 'p':
+        powerUps.push(
+          new PowerUp({
+            position: {
+              x: Boundary.width * columnIndex + Boundary.width / 2,
+              y: Boundary.height * rowIndex + Boundary.height / 2
+            }
+          })
+        )
+        break
     }
   })
 })
@@ -636,12 +664,13 @@ function animate (): void {
     }
   }
 
-  // touch pellets
-  for (let i = pellets.length - 1; i > 0; i--) {
+  // render pellets
+  for (let i = pellets.length - 1; i >= 0; i--) {
     const pellet = pellets[i]
 
     pellet.draw()
 
+    // touch pellets
     // hypot is an static method returns the square root of the sum of squares of its arguments
     // lo usamos para calcular la distancia mas larga de un triangulo (la hipotenusa)
     if ((Math.hypot(
@@ -651,6 +680,46 @@ function animate (): void {
       pellets.splice(i, 1)
       score += 10
       scoreEl.innerText = `${score}`
+    }
+  }
+
+  // detect collision beteween ghost and player
+  for (let i = ghosts.length - 1; i >= 0; i--) {
+    const ghost = ghosts[i]
+
+    // player lose condition
+    if ((Math.hypot(ghost.position.x - player.position.x,
+      ghost.position.y - player.position.y)) <
+      (ghost.radius + player.radius)) {
+      if (Ghost.scared) {
+        ghosts.splice(i, 1)
+      } else {
+        cancelAnimationFrame(animationID)
+        console.log('f')
+      }
+    }
+  }
+
+  // render power up
+  for (let i = powerUps.length - 1; i >= 0; i--) {
+    const powerUp = powerUps[i]
+
+    powerUp.draw()
+
+    // touch powerUps
+    if ((Math.hypot(
+      powerUp.position.x - player.position.x,
+      powerUp.position.y - player.position.y
+    ) < powerUp.radius + player.radius)) {
+      powerUps.splice(i, 1)
+
+      // make ghost scared
+      Ghost.scared = true
+
+      // reset property scared
+      setTimeout(() => {
+        Ghost.scared = false
+      }, 3000)
     }
   }
 
@@ -671,13 +740,8 @@ function animate (): void {
   ghosts.forEach((ghost) => {
     ghost.update()
 
-    // lose condition
-    if ((Math.hypot(ghost.position.x - player.position.x,
-      ghost.position.y - player.position.y)) <
-      (ghost.radius + player.radius)) {
-      cancelAnimationFrame(animationID)
-      console.log('f')
-    }
+    // ghost touch player
+
     const collisions: string[] = []
 
     boundaries.forEach(boundary => {
