@@ -76,6 +76,7 @@ interface InterfaceBorders {
 interface InterfacePlayer extends InterfacePosition {
   velocity: InterfacePositionsXY
   radius?: number
+  color?: string
 }
 
 interface InterfacePellet extends InterfacePosition {
@@ -189,7 +190,6 @@ class Player {
   public position: InterfacePositionsXY
   public velocity: InterfacePositionsXY
   public radius: number
-  static radius: number = 10
 
   constructor ({ position, velocity, radius = 15 }: InterfacePlayer) {
     this.position = position
@@ -203,6 +203,36 @@ class Player {
     // Nota E-4
     c.arc(this.position.x, this.position.y, this.radius, 0, Math.PI * 2)
     c.fillStyle = 'yellow'
+    c.fill()
+    c.closePath()
+  }
+
+  update (): void {
+    this.draw()
+    this.position.x += this.velocity.x
+    this.position.y += this.velocity.y
+  }
+}
+
+class Ghost {
+  public position: InterfacePositionsXY
+  public velocity: InterfacePositionsXY
+  public radius: number
+  public color: string
+  public prevCollision: string[]
+
+  constructor ({ position, velocity, radius = 15, color = 'red' }: InterfacePlayer) {
+    this.position = position
+    this.velocity = velocity
+    this.radius = radius
+    this.color = color
+    this.prevCollision = []
+  }
+
+  draw (): void {
+    c.beginPath()
+    c.arc(this.position.x, this.position.y, this.radius, 0, Math.PI * 2)
+    c.fillStyle = this.color
     c.fill()
     c.closePath()
   }
@@ -237,14 +267,27 @@ class Pellet {
 
 const player = new Player({
   position: {
-    x: Boundary.width + Boundary.width / 2,
-    y: Boundary.height + Boundary.height / 2
+    x: Boundary.width + (Boundary.width / 2),
+    y: Boundary.height + (Boundary.height / 2)
   },
   velocity: {
     x: 0,
     y: 0
   }
 })
+
+const ghosts = [
+  new Ghost({
+    position: {
+      x: (Boundary.width * 6) + (Boundary.width / 2),
+      y: Boundary.height + (Boundary.height / 2)
+    },
+    velocity: {
+      x: 5,
+      y: 0
+    }
+  })
+]
 
 function createImage (src: string): HTMLImageElement {
   const image = new Image()
@@ -434,16 +477,16 @@ map.forEach((row, rowIndex) => {
   })
 })
 
-function circleColideWithReactangle ({
+function circleCollideWithReactangle ({
   circle,
   rectangle
 }: InterfaceColitionElements): boolean {
   // Los numeros indican cual debe comprarse con cual
   const playerBorders = {
-    top: player.position.y - player.radius + circle.velocity.y, // 1
-    right: player.position.x + player.radius + circle.velocity.x, // 2
-    bottom: player.position.y + player.radius + circle.velocity.y, // 3
-    left: player.position.x - player.radius + circle.velocity.x // 4
+    top: circle.position.y - circle.radius + circle.velocity.y, // 1
+    right: circle.position.x + circle.radius + circle.velocity.x, // 2
+    bottom: circle.position.y + circle.radius + circle.velocity.y, // 3
+    left: circle.position.x - circle.radius + circle.velocity.x // 4
   }
 
   const boundaryBorders: InterfaceBorders = {
@@ -472,7 +515,7 @@ function animate (): void {
       const boundary = boundaries[i]
 
       if (
-        circleColideWithReactangle({
+        circleCollideWithReactangle({
           circle: {
             ...player,
             velocity: {
@@ -494,7 +537,7 @@ function animate (): void {
       const boundary = boundaries[i]
 
       if (
-        circleColideWithReactangle({
+        circleCollideWithReactangle({
           circle: {
             ...player,
             velocity: {
@@ -516,7 +559,7 @@ function animate (): void {
       const boundary = boundaries[i]
 
       if (
-        circleColideWithReactangle({
+        circleCollideWithReactangle({
           circle: {
             ...player,
             velocity: {
@@ -538,7 +581,7 @@ function animate (): void {
       const boundary = boundaries[i]
 
       if (
-        circleColideWithReactangle({
+        circleCollideWithReactangle({
           circle: {
             ...player,
             velocity: {
@@ -579,7 +622,7 @@ function animate (): void {
     boundary.draw()
 
     if (
-      circleColideWithReactangle({
+      circleCollideWithReactangle({
         circle: player,
         rectangle: boundary
       })) {
@@ -587,8 +630,89 @@ function animate (): void {
       player.velocity.x = 0
     }
   })
-
   player.update()
+
+  ghosts.forEach((ghost) => {
+    ghost.update()
+
+    const collisions: string[] = []
+
+    boundaries.forEach(boundary => {
+      if (!collisions.includes('right') && circleCollideWithReactangle({
+        circle: {
+          ...ghost,
+          velocity: { x: 5, y: 0 }
+        },
+        rectangle: boundary
+      })
+      ) { collisions.push('right') }
+
+      if (!collisions.includes('left') && circleCollideWithReactangle({
+        circle: {
+          ...ghost,
+          velocity: { x: -5, y: 0 }
+        },
+        rectangle: boundary
+      })
+      ) {
+        collisions.push('left')
+      }
+
+      if (!collisions.includes('up') && circleCollideWithReactangle({
+        circle: {
+          ...ghost,
+          velocity: { x: 0, y: -5 }
+        },
+        rectangle: boundary
+      })
+      ) { collisions.push('up') }
+
+      if (!collisions.includes('down') && circleCollideWithReactangle({
+        circle: {
+          ...ghost,
+          velocity: { x: 0, y: 5 }
+        },
+        rectangle: boundary
+      })
+      ) { collisions.push('down') }
+    })
+
+    if (collisions.length > ghost.prevCollision.length) ghost.prevCollision = collisions
+
+    // comparamos las colisiones vs las coliciones anteriores
+    if (JSON.stringify(collisions) !== JSON.stringify(ghost.prevCollision)) {
+      if (ghost.velocity.x > 0) ghost.prevCollision.push('right')
+      else if (ghost.velocity.x < 0) ghost.prevCollision.push('left')
+      else if (ghost.velocity.y < 0) ghost.prevCollision.push('up')
+      else if (ghost.velocity.y > 0) ghost.prevCollision.push('down')
+
+      const pathways = ghost.prevCollision.filter(collision => !collisions.includes(collision))
+
+      // escogemos una direccion disponible al azar
+      const direction = pathways[Math.floor(Math.random() * pathways.length)]
+
+      switch (direction) {
+        case 'down':
+          ghost.velocity.y = 5
+          ghost.velocity.x = 0
+          break
+        case 'up':
+          ghost.velocity.y = -5
+          ghost.velocity.x = 0
+          break
+        case 'right':
+          ghost.velocity.y = 0
+          ghost.velocity.x = 5
+          break
+        case 'left':
+          ghost.velocity.y = 0
+          ghost.velocity.x = -5
+          break
+      }
+
+      ghost.prevCollision = []
+    }
+  })
 }
 
 animate()
@@ -640,3 +764,34 @@ window.addEventListener('keyup', (event) => {
       break
   }
 })
+
+// if (ghost.velocity.x > 0) ghost.prevCollision.push('right')
+// else if (ghost.velocity.x < 0) ghost.prevCollision.push('left')
+// else if (ghost.velocity.y < 0) ghost.prevCollision.push('up')
+// else if (ghost.velocity.y > 0) ghost.prevCollision.push('down')
+
+// comparamos las colisiones vs las coliciones anteriores
+
+// escogemos una direccion disponible al azar
+// const direction = pathways[Math.floor(Math.random() * pathways.length)]
+
+// switch (direction) {
+//   case 'down':
+//     ghost.velocity.y = 5
+//     ghost.velocity.x = 0
+//     break
+//   case 'up':
+//     ghost.velocity.y = -5
+//     ghost.velocity.x = 0
+//     break
+//   case 'right':
+//     ghost.velocity.y = 0
+//     ghost.velocity.x = 5
+//     break
+//   case 'left':
+//     ghost.velocity.y = 0
+//     ghost.velocity.x = -5
+//     break
+// }
+
+// ghost.prevCollision = []
