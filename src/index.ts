@@ -79,7 +79,7 @@
   0 -> start of the arc measured in radians, not degrees
   Math.PI * 2 -> end of the arc (2 pi in radians is a full circle)
 
-  Note D-3 and Note D-4
+  Note D-3, Note D-4 and Note D-5
   c.lineTo(this.position.x, this.position.y)
 
   if (this.radiands < 0 || this.radiands > 0.75) {
@@ -91,7 +91,7 @@
 */
 
 /*
-  Note F-6
+  Note F-1
 
   method tells the browser that you wish to perform an animation and requests that the browser calls a specified function to update an animation right before the next repaint.
 
@@ -99,12 +99,24 @@
 */
 
 /*
-  Note G-7
+  Note G-1
   clean the canvas before each iteration
   0 -> start on x-axis
   0 -> start on y-axis
   canvas.width -> end on x-axis
   canvas.height -> end on y-axis
+*/
+
+/*
+    Note H-1
+
+    array.forEach() was not implemented because it caused a flashing effect on our points. By doing the for we can iterate in reverse (from the end to the beginning) and avoid this effect
+
+    for is for removing items from the end to the beginning to avoid a flashing effect
+
+    Note H-2
+
+    hypot is an static method returns the square root of the sum of squares of its arguments
 */
 
 /* ============= Interfaces ============= */
@@ -206,6 +218,8 @@ const keys = {
 let lastKey = ''
 
 let score = 0
+
+let animationID: number
 
 const GAME_KEYS = {
   UP: 'w',
@@ -413,6 +427,8 @@ function createImage (src: string): HTMLImageElement {
   return image
 }
 
+// Render images on the map
+
 map.forEach((row, rowIndex) => {
   row.forEach((symbol, columnIndex) => {
     switch (symbol) {
@@ -605,6 +621,7 @@ map.forEach((row, rowIndex) => {
   })
 })
 
+// Function to detect collisions between a circle and a square
 function circleCollideWithReactangle ({
   circle,
   rectangle
@@ -638,16 +655,14 @@ function circleCollideWithReactangle ({
   playerBorders.left <= boundaryBorders.right
 }
 
-let animationID: number
-
 function animate (): void {
-  // Note F-6
+  // Note F-1
   animationID = window.requestAnimationFrame(animate)
-  // Note G-7
+  // Note G-1
   c.clearRect(0, 0, canvas.width, canvas.height)
 
   if (keys.up.pressed && lastKey === GAME_KEYS.UP) {
-    // Por cada borde (boundary) compararemos si ese borde esta tocando a nuestro player
+    // For each edge (boundary) we will compare if that edge is touching our player
     for (let i = 0; i < boundaries.length; i++) {
       const boundary = boundaries[i]
 
@@ -738,14 +753,14 @@ function animate (): void {
   }
 
   // render pellets
+  // Note h-1
   for (let i = pellets.length - 1; i >= 0; i--) {
     const pellet = pellets[i]
 
     pellet.draw()
 
     // touch pellets
-    // hypot is an static method returns the square root of the sum of squares of its arguments
-    // lo usamos para calcular la distancia mas larga de un triangulo (la hipotenusa)
+    // Note H-2
     if ((Math.hypot(
       pellet.position.x - player.position.x,
       pellet.position.y - player.position.y
@@ -768,7 +783,7 @@ function animate (): void {
         ghosts.splice(i, 1)
       } else {
         cancelAnimationFrame(animationID)
-        console.log('f')
+        console.log('GAME OVER (F)')
       }
     }
   }
@@ -776,7 +791,7 @@ function animate (): void {
   // win condition
 
   if (pellets.length === 0) {
-    console.log('you win')
+    console.log('YOU WIN')
     cancelAnimationFrame(animationID)
   }
 
@@ -797,12 +812,11 @@ function animate (): void {
       Ghost.scared = true
 
       // reset property scared
-      setTimeout(() => {
-        Ghost.scared = false
-      }, 3000)
+      setTimeout(() => { Ghost.scared = false }, 3000)
     }
   }
 
+  // Stop player if the player hit a wall
   boundaries.forEach((boundary) => {
     boundary.draw()
 
@@ -815,15 +829,16 @@ function animate (): void {
       player.velocity.x = 0
     }
   })
+
   player.update()
 
+  // remder ghost
   ghosts.forEach((ghost) => {
     ghost.update()
 
-    // ghost touch player
-
     const collisions: string[] = []
 
+    // ghost touch player
     boundaries.forEach(boundary => {
       if (!collisions.includes('right') && circleCollideWithReactangle({
         circle: {
@@ -866,7 +881,7 @@ function animate (): void {
 
     if (collisions.length > ghost.prevCollision.length) ghost.prevCollision = collisions
 
-    // comparamos las colisiones vs las coliciones anteriores
+    // we compare the collisions vs the previous collisions
     if (JSON.stringify(collisions) !== JSON.stringify(ghost.prevCollision)) {
       if (ghost.velocity.x > 0) ghost.prevCollision.push('right')
       else if (ghost.velocity.x < 0) ghost.prevCollision.push('left')
@@ -875,7 +890,7 @@ function animate (): void {
 
       const pathways = ghost.prevCollision.filter(collision => !collisions.includes(collision))
 
-      // escogemos una direccion disponible al azar
+      // ghost chooses a random direction
       const direction = pathways[Math.floor(Math.random() * pathways.length)]
 
       switch (direction) {
@@ -901,9 +916,10 @@ function animate (): void {
     }
   })
 
+  // Note D-5
   if (player.velocity.x > 0) player.rotation = 0
   else if (player.velocity.x < 0) player.rotation = Math.PI
-  else if (player.velocity.y > 0) player.rotation = Math.PI / 2 // ok
+  else if (player.velocity.y > 0) player.rotation = Math.PI / 2
   else if (player.velocity.y < 0) player.rotation = Math.PI * 1.5
 }
 
