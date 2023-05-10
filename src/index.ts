@@ -220,6 +220,8 @@ class Ghost {
   public radius: number
   public color: string
   public prevCollision: string[]
+  public speed: number
+  static initialSpeed: number = 2
 
   constructor ({ position, velocity, radius = 15, color = 'red' }: InterfacePlayer) {
     this.position = position
@@ -227,6 +229,7 @@ class Ghost {
     this.radius = radius
     this.color = color
     this.prevCollision = []
+    this.speed = 2
   }
 
   draw (): void {
@@ -283,9 +286,31 @@ const ghosts = [
       y: Boundary.height + (Boundary.height / 2)
     },
     velocity: {
-      x: 5,
+      x: Ghost.initialSpeed,
       y: 0
     }
+  }),
+  new Ghost({
+    position: {
+      x: Boundary.width + (Boundary.width / 2),
+      y: (Boundary.height * 9) + (Boundary.height / 2)
+    },
+    velocity: {
+      x: Ghost.initialSpeed,
+      y: 0
+    },
+    color: 'pink'
+  }),
+  new Ghost({
+    position: {
+      x: (Boundary.width * 7) + (Boundary.width / 2),
+      y: Boundary.height * 11 + (Boundary.height / 2)
+    },
+    velocity: {
+      x: Ghost.initialSpeed,
+      y: 0
+    },
+    color: 'blue'
   })
 ]
 
@@ -481,6 +506,15 @@ function circleCollideWithReactangle ({
   circle,
   rectangle
 }: InterfaceColitionElements): boolean {
+  /*
+    El padding es para evitar que, si el fantasma se mueve lento,
+    el sistema de colision no nos de una direccion errorea al pensar que
+    tiene lugar para moverse en una direccion
+
+    el padding seria el espacio restante entre el objeto que se mueve y el limite de un borde
+  */
+  const padding = Boundary.width / 2 - circle.radius - 1
+
   // Los numeros indican cual debe comprarse con cual
   const playerBorders = {
     top: circle.position.y - circle.radius + circle.velocity.y, // 1
@@ -490,10 +524,10 @@ function circleCollideWithReactangle ({
   }
 
   const boundaryBorders: InterfaceBorders = {
-    bottom: rectangle.position.y + rectangle.height, // 1
-    left: rectangle.position.x, // 2
-    top: rectangle.position.y, // 3
-    right: rectangle.position.x + rectangle.width // 4
+    bottom: rectangle.position.y + rectangle.height + padding, // 1
+    left: rectangle.position.x - padding, // 2
+    top: rectangle.position.y - padding, // 3
+    right: rectangle.position.x + rectangle.width + padding // 4
   }
 
   // Nota A-1
@@ -503,9 +537,11 @@ function circleCollideWithReactangle ({
   playerBorders.left <= boundaryBorders.right
 }
 
+let animationID: number
+
 function animate (): void {
   // Nota F-6
-  window.requestAnimationFrame(animate)
+  animationID = window.requestAnimationFrame(animate)
   // Nota G-7
   c.clearRect(0, 0, canvas.width, canvas.height)
 
@@ -635,13 +671,20 @@ function animate (): void {
   ghosts.forEach((ghost) => {
     ghost.update()
 
+    // lose condition
+    if ((Math.hypot(ghost.position.x - player.position.x,
+      ghost.position.y - player.position.y)) <
+      (ghost.radius + player.radius)) {
+      cancelAnimationFrame(animationID)
+      console.log('f')
+    }
     const collisions: string[] = []
 
     boundaries.forEach(boundary => {
       if (!collisions.includes('right') && circleCollideWithReactangle({
         circle: {
           ...ghost,
-          velocity: { x: 5, y: 0 }
+          velocity: { x: ghost.speed, y: 0 }
         },
         rectangle: boundary
       })
@@ -650,7 +693,7 @@ function animate (): void {
       if (!collisions.includes('left') && circleCollideWithReactangle({
         circle: {
           ...ghost,
-          velocity: { x: -5, y: 0 }
+          velocity: { x: -ghost.speed, y: 0 }
         },
         rectangle: boundary
       })
@@ -661,7 +704,7 @@ function animate (): void {
       if (!collisions.includes('up') && circleCollideWithReactangle({
         circle: {
           ...ghost,
-          velocity: { x: 0, y: -5 }
+          velocity: { x: 0, y: -ghost.speed }
         },
         rectangle: boundary
       })
@@ -670,7 +713,7 @@ function animate (): void {
       if (!collisions.includes('down') && circleCollideWithReactangle({
         circle: {
           ...ghost,
-          velocity: { x: 0, y: 5 }
+          velocity: { x: 0, y: ghost.speed }
         },
         rectangle: boundary
       })
@@ -693,20 +736,20 @@ function animate (): void {
 
       switch (direction) {
         case 'down':
-          ghost.velocity.y = 5
+          ghost.velocity.y = ghost.speed
           ghost.velocity.x = 0
           break
         case 'up':
-          ghost.velocity.y = -5
+          ghost.velocity.y = -ghost.speed
           ghost.velocity.x = 0
           break
         case 'right':
           ghost.velocity.y = 0
-          ghost.velocity.x = 5
+          ghost.velocity.x = ghost.speed
           break
         case 'left':
           ghost.velocity.y = 0
-          ghost.velocity.x = -5
+          ghost.velocity.x = -ghost.speed
           break
       }
 
