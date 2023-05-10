@@ -228,6 +228,54 @@ const GAME_KEYS = {
   LEFT: 'a'
 }
 
+/* ============= Add event listeners for the keys ============= */
+
+window.addEventListener('keydown', (event) => {
+  event.preventDefault()
+
+  const { key } = event
+
+  switch (key) {
+    case GAME_KEYS.UP:
+      keys.up.pressed = true
+      lastKey = GAME_KEYS.UP
+      break
+    case GAME_KEYS.DOWN:
+      keys.down.pressed = true
+      lastKey = GAME_KEYS.DOWN
+      break
+    case GAME_KEYS.RIGHT:
+      keys.right.pressed = true
+      lastKey = GAME_KEYS.RIGHT
+      break
+    case GAME_KEYS.LEFT:
+      keys.left.pressed = true
+      lastKey = GAME_KEYS.LEFT
+      break
+  }
+})
+
+window.addEventListener('keyup', (event) => {
+  event.preventDefault()
+
+  const { key } = event
+
+  switch (key) {
+    case GAME_KEYS.UP:
+      keys.up.pressed = false
+      break
+    case GAME_KEYS.DOWN:
+      keys.down.pressed = false
+      break
+    case GAME_KEYS.RIGHT:
+      keys.right.pressed = false
+      break
+    case GAME_KEYS.LEFT:
+      keys.left.pressed = false
+      break
+  }
+})
+
 /* ============= Classes ============= */
 
 class Boundary {
@@ -924,51 +972,3 @@ function animate (): void {
 }
 
 animate()
-
-/* ============= Add event listeners for the keys ============= */
-
-window.addEventListener('keydown', (event) => {
-  event.preventDefault()
-
-  const { key } = event
-
-  switch (key) {
-    case GAME_KEYS.UP:
-      keys.up.pressed = true
-      lastKey = GAME_KEYS.UP
-      break
-    case GAME_KEYS.DOWN:
-      keys.down.pressed = true
-      lastKey = GAME_KEYS.DOWN
-      break
-    case GAME_KEYS.RIGHT:
-      keys.right.pressed = true
-      lastKey = GAME_KEYS.RIGHT
-      break
-    case GAME_KEYS.LEFT:
-      keys.left.pressed = true
-      lastKey = GAME_KEYS.LEFT
-      break
-  }
-})
-
-window.addEventListener('keyup', (event) => {
-  event.preventDefault()
-
-  const { key } = event
-
-  switch (key) {
-    case GAME_KEYS.UP:
-      keys.up.pressed = false
-      break
-    case GAME_KEYS.DOWN:
-      keys.down.pressed = false
-      break
-    case GAME_KEYS.RIGHT:
-      keys.right.pressed = false
-      break
-    case GAME_KEYS.LEFT:
-      keys.left.pressed = false
-      break
-  }
-})
