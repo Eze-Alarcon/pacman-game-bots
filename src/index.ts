@@ -700,6 +700,13 @@ function animate (): void {
     }
   }
 
+  // win condition
+
+  if (pellets.length === 0) {
+    console.log('you win')
+    cancelAnimationFrame(animationID)
+  }
+
   // render power up
   for (let i = powerUps.length - 1; i >= 0; i--) {
     const powerUp = powerUps[i]
